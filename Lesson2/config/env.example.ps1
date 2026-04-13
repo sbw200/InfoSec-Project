@@ -1,0 +1,6 @@
+$env:API_URL = "https://<API_ID>.execute-api.us-east-1.amazonaws.com/dvsa/order"
+$env:TOKEN_B = "<PASTE_USER_B_TOKEN>"
+$env:TOKEN_C = "<PASTE_USER_C_TOKEN>"
+$env:VICTIM_USERNAME = "<USER_C_USERNAME>"
+$env:VICTIM_SUB = "<USER_C_SUB>"
+$env:FAKE_AS_C = ""

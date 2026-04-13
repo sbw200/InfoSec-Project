@@ -1,0 +1,9 @@
+{
+  "name": "dvsa-jwt-fix-snippets",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependencies for the DVSA JWT verification fix example",
+  "dependencies": {
+    "node-jose": "^2.2.0"
+  }
+}
