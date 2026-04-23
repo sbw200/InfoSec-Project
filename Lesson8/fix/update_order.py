@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+from botocore.exceptions import ClientError
 
 # status list
 # -----------
@@ -14,41 +15,29 @@ import os
 # 600: rejected
 
 def lambda_handler(event, context):
-  orderId = event["orderId"]
-  itemList = event["items"]
-  status = 100
-  userId = event["user"]
-  address = "{}"
+    orderId = event["orderId"]
+    itemList = event["items"]
+    userId = event["user"]
 
-  dynamodb = boto3.resource('dynamodb')
-  table = dynamodb.Table(os.environ["ORDERS_TABLE"])
-  response = table.get_item(
-    Key={
-      "orderId": orderId,
-      "userId": userId
-    },
-    AttributesToGet=['orderStatus']
-  )
-  if 'Item' not in response:
-    res = {"status": "err", "msg": "could not find order"}
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.environ["ORDERS_TABLE"])
+
+    try:
+        table.update_item(
+            Key={"orderId": orderId, "userId": userId},
+            UpdateExpression="SET itemList = :itemList",
+            ConditionExpression="attribute_exists(orderId) AND attribute_exists(userId) AND orderStatus = :open",
+            ExpressionAttributeValues={
+                ":itemList": itemList,
+                ":open": 100
+            }
+        )
+        res = {"status": "ok", "msg": "cart updated"}
+
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            res = {"status": "err", "msg": "order cannot be updated during processing or after payment"}
+        else:
+            raise
+
     return res
-
-  if response["Item"]["orderStatus"] != 100:
-    res = {"status": "err", "msg": "order cannot be updated during processing or after payment"}
-    return res
-
-  update_expr = 'SET {} = :itemList'.format("itemList")
-  response = table.update_item(
-    Key={"orderId": orderId, "userId": userId},
-    UpdateExpression=update_expr,
-    ExpressionAttributeValues={
-      ':itemList': itemList
-    }
-  )
-
-  if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-    res = {"status": "ok", "msg": "cart updated"}
-  else:
-    res = {"status": "err", "err": "could not update cart"}
-
-  return res
